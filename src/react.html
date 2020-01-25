@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>微信抢红包计算</title>
+<script src="./js/echarts.min.js"></script>
+</head>
+<body>
+
+
+<div id="commitdata" style="text-align: center;" name="commitdata">
+    每次红包总金额: <input type="number" id="AmountOfMoney" name="AmountOfMoney" min="1" max="99999999">
+    抢红包人数：<input type="number" id="sumPeople" name="sumPeople" min="1" max="99999999">
+    发红包次数: <input type="number" id="SumNum" name="SumNum" min="1" max="100">
+    <input type="submit" name="submit" value="提交" onclick="getFormInfo()">
+</div>
+
+ <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+ <div id="main" style="width: 600px;height:400px;text-align: center;"></div>
+ <script type="text/javascript">
+
+    // 总金额
+    var AmountOfMoney;
+    // 总人数
+    var sumPeople;
+    // 发红包次数
+    var SumNum;
+
+    // 横坐标数据
+    var xAxis;
+
+    //纵坐标数据
+    var yAxis;
+
+    var myX = new Array()
+
+    var myY = new Array()
+
+    // 指定图表的配置项和数据
+    var optionTableData;
+
+    // 获取input框输入的内容
+    function getFormInfo(){  
+        myX = new Array();
+        myY = new Array();
+        AmountOfMoney=document.getElementById("AmountOfMoney").value;
+        sumPeople=document.getElementById("sumPeople").value;
+        SumNum=document.getElementById("SumNum").value;
+        console.log("总金额:"+AmountOfMoney);
+        console.log("抢红包人数："+sumPeople);
+        console.log("发红包次数:"+SumNum);
+        optionsData(sumPeople);
+        algorithmData();
+
+        // 指定图表的配置项和数据
+        var option = {
+            title: {
+                text: '微信抢红包-示意图'
+            },
+            tooltip: {},
+            legend: {
+                data:['金额']
+            },
+            xAxis: {
+                data: myX
+            },
+            yAxis: {},
+            series: [{
+                name: '金额',
+                type: 'bar',
+                data: myY
+            }]
+        };
+        optionTableData = option;
+        setTableData(option);
+    };
+
+    // 根据输入的抢红包人数生成底边栏
+    function optionsData(sumPeople){
+        myX=new Array();
+        for(let i=1;i<= sumPeople ;i++){
+            myX.push("第" + i + "次")
+        }
+        xAxis = myX;
+    }
+
+    // 抢红包算法
+    // 红包算法 = 剩余金额/剩余人数
+    function algorithmData(){
+        let sumMoney = 0;
+        for(let j = 0 ; j< SumNum;j++){
+            let countMoney = AmountOfMoney;
+            for(let i = 0 ; i< sumPeople;i++){
+                let maxNums = ((countMoney/(sumPeople - i)) * 2).toFixed(2);
+                let randomNUm = RandomNumNew(1,maxNums*100)/100;
+                if(sumPeople - i === 1){
+                    randomNUm = countMoney.toFixed(2);
+                }
+                if(myY.length == sumPeople){
+                    myY[i] = accAdd(myY[i],randomNUm);
+                }else{
+                    myY.push(randomNUm);
+                }
+                sumMoney = accAdd(sumMoney,randomNUm);
+                countMoney = countMoney - randomNUm;
+            }
+        }
+        console.log("随机算法后的总金额"+sumMoney)
+    }
+
+
+    //生成从minNum到maxNum的随机数
+    function randomNums(minNum,maxNum){ 
+        
+        switch(arguments.length){ 
+            case 1: 
+                return parseInt(Math.random()*minNum+1,10); 
+            break; 
+            case 2: 
+                return parseInt(Math.random()*(maxNum-minNum+1)+minNum,10); 
+            break; 
+                default: 
+                    return 0; 
+                break; 
+        } 
+    }
+
+    function RandomNumNew(Min, Max) {
+            var Range = Max - Min;
+            var Rand = Math.random();
+            var num = Min + Math.floor(Rand * Range);  //舍去
+            return num;
+    } 
+
+
+    // 生成随机数,保留两位小数
+    function randomNumArg(max){
+        let min = 0.01;
+        let num = Math.floor(Math.random() * (max - min + 1)) + min;
+        return num;
+    }
+
+     // 使用刚指定的配置项和数据显示图表。
+     function setTableData(option){
+        console.log("获取x轴数据"+option.xAxis.data);
+        // 基于准备好的dom，初始化echarts实例
+        var tableId = document.getElementById('main');
+        tableId.removeAttribute("_echarts_instance_");
+        var myChart = echarts.init(tableId);
+        
+        myChart.setOption(option);
+     }
+
+
+    var accAdd = function(num1, num2) {
+        num1 = Number(num1);
+        num2 = Number(num2);
+        var dec1, dec2, times;
+        try { dec1 = countDecimals(num1)+1; } catch (e) { dec1 = 0; }
+        try { dec2 = countDecimals(num2)+1; } catch (e) { dec2 = 0; }
+        times = Math.pow(10, Math.max(dec1, dec2));
+        // var result = (num1 * times + num2 * times) / times;
+        var result = (accMul(num1, times) + accMul(num2, times)) / times;
+        return getCorrectResult("add", num1, num2, result);
+        // return result;
+    };
+    
+    var accSub = function(num1, num2) {
+        num1 = Number(num1);
+        num2 = Number(num2);
+        var dec1, dec2, times;
+        try { dec1 = countDecimals(num1)+1; } catch (e) { dec1 = 0; }
+        try { dec2 = countDecimals(num2)+1; } catch (e) { dec2 = 0; }
+        times = Math.pow(10, Math.max(dec1, dec2));
+        // var result = Number(((num1 * times - num2 * times) / times);
+        var result = Number((accMul(num1, times) - accMul(num2, times)) / times);
+        return getCorrectResult("sub", num1, num2, result);
+        // return result;
+    };
+    
+    var accDiv = function(num1, num2) {
+        num1 = Number(num1);
+        num2 = Number(num2);
+        var t1 = 0, t2 = 0, dec1, dec2;
+        try { t1 = countDecimals(num1); } catch (e) { }
+        try { t2 = countDecimals(num2); } catch (e) { }
+        dec1 = convertToInt(num1);
+        dec2 = convertToInt(num2);
+        var result = accMul((dec1 / dec2), Math.pow(10, t2 - t1));
+        return getCorrectResult("div", num1, num2, result);
+        // return result;
+    };
+    
+    var accMul = function(num1, num2) {
+        num1 = Number(num1);
+        num2 = Number(num2);
+        var times = 0, s1 = num1.toString(), s2 = num2.toString();
+        try { times += countDecimals(s1); } catch (e) { }
+        try { times += countDecimals(s2); } catch (e) { }
+        var result = convertToInt(s1) * convertToInt(s2) / Math.pow(10, times);
+        return getCorrectResult("mul", num1, num2, result);
+        // return result;
+    };
+    
+    var countDecimals = function(num) {
+        var len = 0;
+        try {
+            num = Number(num);
+            var str = num.toString().toUpperCase();
+            if (str.split('E').length === 2) { // scientific notation
+                var isDecimal = false;
+                if (str.split('.').length === 2) {
+                    str = str.split('.')[1];
+                    if (parseInt(str.split('E')[0]) !== 0) {
+                        isDecimal = true;
+                    }
+                }
+                let x = str.split('E');
+                if (isDecimal) {
+                    len = x[0].length;
+                }
+                len -= parseInt(x[1]);
+            } else if (str.split('.').length === 2) { // decimal
+                if (parseInt(str.split('.')[1]) !== 0) {
+                    len = str.split('.')[1].length;
+                }
+            }
+        } catch(e) {
+            throw e;
+        } finally {
+            if (isNaN(len) || len < 0) {
+                len = 0;
+            }
+            return len;
+        }
+    };
+    
+    var convertToInt = function(num) {
+        num = Number(num);
+        var newNum = num;
+        var times = countDecimals(num);
+        var temp_num = num.toString().toUpperCase();
+        if (temp_num.split('E').length === 2) {
+            newNum = Math.round(num * Math.pow(10, times));
+        } else {
+            newNum = Number(temp_num.replace(".", ""));
+        }
+        return newNum;
+    };
+    
+    var getCorrectResult = function(type, num1, num2, result) {
+        var temp_result = 0;
+        switch (type) {
+            case "add":
+                temp_result = num1 + num2;
+                break;
+            case "sub":
+                temp_result = num1 - num2;
+                break;
+            case "div":
+                temp_result = num1 / num2;
+                break;
+            case "mul":
+                temp_result = num1 * num2;
+                break;
+        }
+        if (Math.abs(result - temp_result) > 1) {
+            return temp_result;
+        }
+        return result;
+    };
+ </script>
+
+</body>
+</html>
